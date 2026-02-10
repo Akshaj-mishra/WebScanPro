@@ -17,3 +17,8 @@ def health():
     return {
         "message": "FastAPI backend running 🚀"
     }
+
+
+@app.post("/input")
+async def get_web():
+    ...
