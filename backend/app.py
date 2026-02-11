@@ -23,7 +23,7 @@ def health():
 @app.post("/input")
 async def get_web(request: ScanRequest):
     crawler = WebCrawler(request.url)
-    scan_results = crawler.scan(request.url)
+    scan_results = crawler.run()
     
     return {
         "status": "Target Scanning Complete",
