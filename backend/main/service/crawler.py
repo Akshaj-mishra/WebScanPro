@@ -17,7 +17,7 @@ class WebCrawler:
 
         for a_tag in soup.find_all("a", href=True):
             full_url = urljoin(current_url, a_tag["href"])
-            full_url = full_url.split("#")[0]  # remove anchors
+            full_url = full_url.split("#")[0]
 
             if self.is_valid_link(full_url) and full_url not in self.visited_urls:
                 links.append(full_url)
@@ -51,21 +51,17 @@ class WebCrawler:
             return
 
         try:
-            print(f"Crawling: {url}")
             self.visited_urls.add(url)
 
             response = requests.get(url, timeout=5)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, "html.parser")
-
-            # Save form info
             self.target_data.append({
                 "url": url,
                 "forms": self.get_inputs(soup, url)
             })
 
-            # Crawl other internal links
             for link in self.get_links(soup, url):
                 self.scan(link)
 
@@ -75,12 +71,3 @@ class WebCrawler:
     def run(self):
         self.scan(self.base_url)
         return self.target_data
-
-
-# Example usage
-if __name__ == "__main__":
-    crawler = WebCrawler("http://localhost:3000")
-    results = crawler.run()
-
-    for page in results:
-        print(page)

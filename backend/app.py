@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from main.service.crawler import WebCrawler 
+from main.service.scanner import Scaner 
 
 app = FastAPI(title="WebScanPro API")
 
@@ -22,8 +22,8 @@ def health():
 
 @app.post("/input")
 async def get_web(request: ScanRequest):
-    crawler = WebCrawler(request.url)
-    scan_results = crawler.run()
+    crawler = Scaner(request.url)
+    scan_results = crawler.crawl()
     
     return {
         "status": "Target Scanning Complete",
