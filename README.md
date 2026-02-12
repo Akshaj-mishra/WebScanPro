@@ -1,8 +1,3 @@
-Love this project — it’s already structured like a real-world security scanner 👌
-Here’s a clean, professional **README.md** you can drop straight into your repo.
-
----
-
 # 🛡️ WebScanPro — Automated Web Application Security Scanner
 
 WebScanPro is a full-stack web application security testing tool designed to automatically scan web apps for common vulnerabilities such as:
