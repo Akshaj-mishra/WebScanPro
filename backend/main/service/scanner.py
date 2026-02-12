@@ -11,8 +11,14 @@ class Scaner :
         self.base_url = base_url.rstrip("/")
     
     def crawl (self):
+        
+        try:
+            surface = WebCrawler(self.base_url)
+            return surface.run()
+        except Exception as e:
+            return {"error": str(e)}
 
-        surface = WebCrawler(self.base_url)
-        return  surface.run()
     
+    def payloads ():
+        ...
         

@@ -15,15 +15,16 @@ app.add_middleware(
 
 class ScanRequest(BaseModel):
     url: str
+    
 
 @app.get("/")
 def health():
-    return {"message": "FastAPI backend running 🚀"}
+    return {"message": "FastAPI backend running "}
 
-@app.post("/input")
+@app.post("/result")
 async def get_web(request: ScanRequest):
-    crawler = Scaner(request.url)
-    scan_results = crawler.crawl()
+    scan = Scaner(request.url)
+    scan_results = scan.crawl()
     
     return {
         "status": "Target Scanning Complete",
