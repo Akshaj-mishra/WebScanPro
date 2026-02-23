@@ -1,72 +1,60 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
-
+from urllib.parse import urljoin, urlparse, urlunparse
 
 class WebCrawler:
-    def __init__(self, base_url):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url, session):
+        self.base_url = base_url if base_url.endswith('/') else base_url + '/'
+        self.session = session 
         self.visited_urls = set()
         self.target_data = []
 
-    def is_valid_link(self, link):
-        return link.startswith(self.base_url)
-
-    def get_links(self, soup, current_url):
-        links = []
-
-        for a_tag in soup.find_all("a", href=True):
-            full_url = urljoin(current_url, a_tag["href"])
-            full_url = full_url.split("#")[0]
-
-            if self.is_valid_link(full_url) and full_url not in self.visited_urls:
-                links.append(full_url)
-
-        return links
-
     def get_inputs(self, soup, url):
         forms_found = []
+        baseline_len = len(soup.get_text())
 
         for form in soup.find_all("form"):
+            action = form.get("action", "").strip()
+            form_action = urljoin(url, action) if action and action != "#" else url
+
             form_details = {
                 "url": url,
-                "action": urljoin(url, form.get("action", "")),
+                "action": form_action,
                 "method": form.get("method", "get").lower(),
+                "baseline_len": baseline_len,
                 "inputs": []
             }
 
-            for input_tag in form.find_all(["input", "textarea", "select"]):
-                form_details["inputs"].append({
-                    "type": input_tag.get("type", "text"),
-                    "name": input_tag.get("name"),
-                    "value": input_tag.get("value", "")
-                })
-
-            forms_found.append(form_details)
-
+            for input_tag in form.find_all(["input", "textarea"]):
+                name = input_tag.get("name")
+                if name:
+                    form_details["inputs"].append({
+                        "name": name,
+                        "value": input_tag.get("value", "") 
+                    })
+            
+            if form_details["inputs"]:
+                forms_found.append(form_details)
         return forms_found
 
     def scan(self, url):
-        if url in self.visited_urls:
+        if url in self.visited_urls or not url.startswith(self.base_url):
             return
-
+        
         try:
             self.visited_urls.add(url)
-
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-
+            response = self.session.get(url, timeout=5)
             soup = BeautifulSoup(response.text, "html.parser")
-            self.target_data.append({
-                "url": url,
-                "forms": self.get_inputs(soup, url)
-            })
+            
+            forms = self.get_inputs(soup, url)
+            if forms:
+                self.target_data.append({"url": url, "forms": forms})
 
-            for link in self.get_links(soup, url):
-                self.scan(link)
-
+            for a_tag in soup.find_all("a", href=True):
+                full_url = urljoin(url, a_tag["href"]).split('#')[0]
+                self.scan(full_url)
         except Exception as e:
-            print(f"Error on {url}: {e}")
+            print(f"Crawler error at {url}: {e}")
 
     def run(self):
         self.scan(self.base_url)
