@@ -49,18 +49,31 @@ class SQLInjector:
             return f"Error: {str(e)}"
 
     def analyze_response(self, response, delay, baseline_len):
+        if not response:
+            return "Error: No response"
+            
         text = response.text.lower()
         
+
         if "login.php" in response.url:
             return "Session Expired/Redirected"
             
-        if any(msg in text for msg in ["sql syntax", "mysql_fetch", "driver error"]):
+
+        error_msgs = ["sql syntax", "mysql_fetch", "driver error", "sqlite/error"]
+        if any(msg in text for msg in error_msgs):
             return "VULNERABLE: SQL Error Detected"
 
-        if delay > 4:
-            return "VULNERABLE: Time-based delay"
 
-        if baseline_len > 0 and abs(len(response.text) - baseline_len) > 50:
-            return "Potential Boolean-based Bypass"
+        if delay > 5:
+            return f"VULNERABLE: Time-based delay ({round(delay, 2)}s)"
+
+
+        if baseline_len > 0:
+            current_len = len(response.text)
+            diff = abs(current_len - baseline_len)
+            
+            
+            if diff > 500: 
+                return "Potential Boolean-based Bypass"
 
         return "Normal response"

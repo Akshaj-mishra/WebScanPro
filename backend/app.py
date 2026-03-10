@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from main.service.scanner import Scaner 
-
+from Database.Routes import result
 app = FastAPI(title="WebScanPro API")
 
 app.add_middleware(
@@ -25,9 +25,11 @@ def health():
 async def get_web(request: ScanRequest):
     scan = Scaner(request.url)
     scan_results = scan.crawl()
+    ans = result()
     
     return {
         "status": "Target Scanning Complete",
         "target_url": request.url,
-        "metadata": scan_results 
+        "metadata": scan_results,
+        "testing" : ans
     }
