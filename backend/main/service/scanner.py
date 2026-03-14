@@ -33,18 +33,18 @@ class Scanner:
             for form in page["forms"]:
                 print(f"    Testing form at: {form['action']}")
                 
-                # Use AI-enhanced testing
+                
                 seed_payloads = self.sql_injector.payloads["error_based"][:5]
                 
                 history = {}
                 def tester(payload):
                     return self.sql_injector.send_payload(form, payload)
 
-                # Initial tests
+                
                 for payload in seed_payloads:
                     history[payload] = tester(payload)
                 
-                # AI adaptive testing
+                
                 ai_results = self.ai.adaptive_loop(tester, initial_history=history, max_rounds=2)
 
                 sql_results.append({
@@ -166,7 +166,7 @@ class Scanner:
             }
         }
 
-# For standalone testing
+
 if __name__ == "__main__":
     scanner = Scanner("http://localhost/DVWA")
     scanner.run_full_scan()
