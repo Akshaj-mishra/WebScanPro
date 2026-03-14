@@ -1,6 +1,6 @@
 import requests
 import time
-import logging
+import json
 
 LOGIN_URL = "http://localhost/login"
 PROTECTED_URL = "http://localhost/dashboard"
@@ -19,13 +19,17 @@ PASSWORD_LIST = [
 
 FAILURE_MESSAGE = "Invalid login"
 
-logging.basicConfig(
-    filename="auth_session_test.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
 session = requests.Session()
+
+report = {
+    "target": LOGIN_URL,
+    "cookie_security": [],
+    "weak_credentials": None,
+    "brute_force": None,
+    "session_fixation": None,
+    "session_hijacking": None
+}
+
 
 def check_cookie_security():
 
@@ -33,23 +37,17 @@ def check_cookie_security():
 
     for cookie in session.cookies:
 
-        print(f"Cookie: {cookie.name}")
+        cookie_data = {
+            "cookie_name": cookie.name,
+            "secure_flag": cookie.secure,
+            "httponly_flag": cookie.has_nonstandard_attr("HttpOnly")
+        }
 
-        if not cookie.secure:
-            logging.warning(f"{cookie.name} cookie missing Secure flag")
-
-        if not cookie.has_nonstandard_attr("HttpOnly"):
-            logging.warning(f"{cookie.name} cookie missing HttpOnly flag")
-
-        print("Secure:", cookie.secure)
-        print("HttpOnly:", cookie.has_nonstandard_attr("HttpOnly"))
-        print("-" * 30)
+        report["cookie_security"].append(cookie_data)
 
 
 
 def test_weak_credentials():
-
-    print("\n[+] Testing weak credentials...")
 
     for password in PASSWORD_LIST:
 
@@ -62,23 +60,23 @@ def test_weak_credentials():
 
         if FAILURE_MESSAGE not in response.text:
 
-            print(f"[!] Weak credential found: {USERNAME}:{password}")
-            logging.error(f"Weak credential accepted: {USERNAME}:{password}")
+            report["weak_credentials"] = {
+                "username": USERNAME,
+                "password": password,
+                "status": "accepted"
+            }
+
             return password
 
-        else:
-            print(f"[-] Tried: {password}")
-
-    logging.info("No weak credentials found")
+    report["weak_credentials"] = "No weak credentials found"
     return None
 
 
 
 def brute_force_simulation():
 
-    print("\n[+] Simulating brute-force attack...")
-
     attempts = 20
+    rate_limit_detected = False
 
     for i in range(attempts):
 
@@ -89,22 +87,20 @@ def brute_force_simulation():
 
         response = session.post(LOGIN_URL, data=data)
 
-        print(f"Attempt {i+1}: {response.status_code}")
-
         if response.status_code == 429:
-            logging.info("Rate limiting detected")
-            print("[+] Rate limiting detected")
-            return
+            rate_limit_detected = True
+            break
 
         time.sleep(0.5)
 
-    logging.warning("No rate limiting detected")
+    report["brute_force"] = {
+        "attempts": attempts,
+        "rate_limiting_detected": rate_limit_detected
+    }
 
 
 
 def session_fixation_test():
-
-    print("\n[+] Testing session fixation...")
 
     initial_session = session.cookies.get_dict()
 
@@ -117,18 +113,17 @@ def session_fixation_test():
 
     new_session = session.cookies.get_dict()
 
-    if initial_session == new_session:
-        logging.warning("Session fixation possible")
-        print("[!] Session ID did not change after login")
+    fixation_possible = initial_session == new_session
 
-    else:
-        print("[+] Session ID changed after login")
+    report["session_fixation"] = {
+        "initial_session": initial_session,
+        "new_session": new_session,
+        "fixation_possible": fixation_possible
+    }
 
 
 
 def session_hijack_test():
-
-    print("\n[+] Simulating session hijacking...")
 
     cookies = session.cookies.get_dict()
 
@@ -136,26 +131,24 @@ def session_hijack_test():
 
     response = hijack_session.get(PROTECTED_URL, cookies=cookies)
 
-    if response.status_code == 200:
-        logging.warning("Session hijacking possible")
-        print("[!] Session hijacking successful")
+    hijack_success = response.status_code == 200
 
-    else:
-        print("[+] Session protected")
+    report["session_hijacking"] = {
+        "cookies_used": cookies,
+        "hijack_successful": hijack_success
+    }
 
 
 
 if __name__ == "__main__":
 
-
-
     check_cookie_security()
-
     test_weak_credentials()
-
     brute_force_simulation()
-
     session_fixation_test()
-
     session_hijack_test()
 
+    with open("security_report.json", "w") as f:
+        json.dump(report, f, indent=4)
+
+    print("Security report generated: security_report.json")
