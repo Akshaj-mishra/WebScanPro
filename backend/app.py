@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from main.service.scanner import Scaner 
 from Database.Routes import result
+
 app = FastAPI(title="WebScanPro API")
 
 app.add_middleware(
