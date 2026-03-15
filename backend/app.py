@@ -27,10 +27,10 @@ async def get_web(request: ScanRequest):
     scanner = Scanner(request.url)
     report_gen = ReportGenerator(request.url)
     
-    # Perform the targeted scan based on the URL suffix
+
     scan_results = scanner.run_targeted_scan(request.url)
     
-    # Add results to the report generator logic
+
     if "sql_injection" in scan_results:
         report_gen.add_sql_results(scan_results["sql_injection"])
     if "xss" in scan_results:
@@ -38,7 +38,7 @@ async def get_web(request: ScanRequest):
     if "idor" in scan_results:
         report_gen.add_idor_results(scan_results["idor"])
     
-    # Generate the AI summary
+
     ai_summary = report_gen.generate_ai_summary()
     
     return {
