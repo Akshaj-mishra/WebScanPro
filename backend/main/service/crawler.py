@@ -42,19 +42,12 @@ class WebCrawler:
             return
         
         try:
-            self.visited_urls.add(url)
             response = self.session.get(url, timeout=5)
             soup = BeautifulSoup(response.text, "html.parser")
-            
             forms = self.get_inputs(soup, url)
-            if forms:
-                self.target_data.append({"url": url, "forms": forms})
-
-            for a_tag in soup.find_all("a", href=True):
-                full_url = urljoin(url, a_tag["href"]).split('#')[0]
-                self.scan(full_url)
+            return [{"url": url, "forms": forms}]
         except Exception as e:
-            print(f"Crawler error at {url}: {e}")
+            return []
 
     def run(self):
         self.scan(self.base_url)

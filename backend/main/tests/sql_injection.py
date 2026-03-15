@@ -3,50 +3,34 @@ import time
 from bs4 import BeautifulSoup
 
 class SQLInjector:
-    def __init__(self, timeout=10):
+    
+    def __init__(self, session, timeout=10):
+        self.session = session # Received from Scanner
         self.timeout = timeout
-        self.session = requests.Session()
-        self.base_url = "http://localhost/DVWA/login.php"
-        self.login()
 
-    def login(self):
-        resp = self.session.get(self.base_url)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        user_token = soup.find("input", {"name": "user_token"})["value"]
+    # Remove the self.login() call from here
 
-        self.session.post(
-            self.base_url,
-            data={
-                "username": "admin",
-                "password": "password",
-                "Login": "Login",
-                "user_token": user_token
-            }
-        )
-        self.session.get("http://localhost/DVWA/security.php?security=low&seclev_submit=Submit")
-
+    # Inside SQLInjector class
     def send_payload(self, form, payload):
         url = form["action"]
         method = form["method"]
         data = {}
 
         for field in form["inputs"]:
-            if field["name"].lower() != "user_token":
-                data[field["name"]] = payload
+            # Don't overwrite the submit button or tokens if they have default values
+            if field["name"].lower() in ["submit", "user_token"]:
+                data[field["name"]] = field["value"]
             else:
-                data[field["name"]] = field["value"] 
+                data[field["name"]] = payload # Inject here
 
-        try:
-            start = time.time()
-            if method == "post":
-                r = self.session.post(url, data=data, timeout=self.timeout)
-            else:
-                r = self.session.get(url, params=data, timeout=self.timeout)
-            
-            delay = time.time() - start
-            return self.analyze_response(r, delay, form.get("baseline_len", 0))
-        except Exception as e:
-            return f"Error: {str(e)}"
+        if method == "post":
+            r = self.session.post(url, data=data)
+        else:
+            r = self.session.get(url, params=data)
+        
+        return self.analyze_response(r, 0, form.get("baseline_len", 0))
+
+
 
     def analyze_response(self, response, delay, baseline_len):
         if not response:
