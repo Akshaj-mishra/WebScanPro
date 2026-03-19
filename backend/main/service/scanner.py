@@ -3,7 +3,7 @@ from main.service.crawler import WebCrawler
 from main.tests.sql_injection import SQLInjector
 from main.tests.xss import AdvancedXSSInjector
 from main.tests.idor import IDORTester
-
+from main.service.testrouter import TestRouter  
 
 class Scanner:
     def __init__(self, base_url):
@@ -23,31 +23,38 @@ class Scanner:
         self.idor_tester = IDORTester(session=self.session)
 
 
-    def run_targeted_scan(self, url):
-        
-        surface = self.crawler.scan(url)
+    def run_full_scan(self):
+        surface = self.crawler.run()
 
-        if not surface:
-            print("[!] No surface found, using fallback.")
-            surface = [{"url": url, "forms": []}]
+        results = {
+            "sql_injection": [],
+            "xss": [],
+            "idor": []
+        }
 
-        print(f"[DEBUG] Surface: {surface}")
+        for page in surface:
+            url = page.get("url")
+            forms = page.get("forms", [])
 
-        results = {}
+            # 🔥 ROUTER DECIDES
+            tests = self.router.decide_tests(page)
 
-        if "sqli" in url:
-            results["sql_injection"] = self._test_sql_logic(surface)
+            print(f"[ROUTER] {url} → {tests}")
 
-        elif "xss" in url:
-            forms = [f for p in surface for f in p.get("forms", [])]
-            results["xss"] = self.xss_injector.scan_all_xss(url, forms)
+            # 🔹 Run SQLi
+            if "sql_injection" in tests:
+                sql_results = self._test_sql_logic([page])
+                results["sql_injection"].extend(sql_results)
 
-        elif "idor" in url or "open_redirect" in url:
-            results["idor"] = self.idor_tester.scan_for_idor(url, surface)
+            # 🔹 Run XSS
+            if "xss" in tests:
+                xss_results = self.xss_injector.scan_all_xss(url, forms)
+                results["xss"].append(xss_results)
 
-        else:
-            print("[*] Running full discovery scan...")
-            results["discovery"] = self.crawler.run()
+            # 🔹 Run IDOR
+            if "idor" in tests:
+                idor_results = self.idor_tester.scan_for_idor(self.base_url, [page])
+                results["idor"].append(idor_results)
 
         return results
 
