@@ -36,22 +36,22 @@ class Scanner:
             url = page.get("url")
             forms = page.get("forms", [])
 
-            # 🔥 ROUTER DECIDES
+           
             tests = self.router.decide_tests(page)
 
             print(f"[ROUTER] {url} → {tests}")
 
-            # 🔹 Run SQLi
+         
             if "sql_injection" in tests:
                 sql_results = self._test_sql_logic([page])
                 results["sql_injection"].extend(sql_results)
 
-            # 🔹 Run XSS
+        
             if "xss" in tests:
                 xss_results = self.xss_injector.scan_all_xss(url, forms)
                 results["xss"].append(xss_results)
 
-            # 🔹 Run IDOR
+
             if "idor" in tests:
                 idor_results = self.idor_tester.scan_for_idor(self.base_url, [page])
                 results["idor"].append(idor_results)

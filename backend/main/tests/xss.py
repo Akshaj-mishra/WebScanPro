@@ -52,14 +52,14 @@ class AdvancedXSSInjector:
             for category, payloads in self.xss_payloads.items():
                 for payload in payloads:
                     try:
-                        # Create test params with payload
+                        
                         test_params = params.copy()
                         test_params[param_name] = payload
                         
-                        # Send request
+                       
                         response = self.session.get(url, params=test_params, timeout=5)
                         
-                        # Check if payload is reflected
+                        
                         if self.check_payload_reflection(response.text, payload):
                             severity = self.assess_xss_severity(response.text, payload)
                             results.append({
@@ -71,7 +71,7 @@ class AdvancedXSSInjector:
                                 "reflected": True,
                                 "type": "Reflected XSS"
                             })
-                            break  # Found vulnerability for this param
+                            break  
                     except Exception as e:
                         continue
         
@@ -83,18 +83,18 @@ class AdvancedXSSInjector:
         method = form.get("method", "get").lower()
         data = {}
         
-        # Prepare form data with payload
+        
         for field in form["inputs"]:
             data[field["name"]] = payload
         
         try:
-            # Submit form with payload
+            
             if method == "post":
                 response = self.session.post(url, data=data, timeout=5)
             else:
                 response = self.session.get(url, params=data, timeout=5)
             
-            # Check if payload is stored and executed
+            
             if self.check_stored_xss(url, payload):
                 return {
                     "vulnerable": True,
@@ -110,16 +110,16 @@ class AdvancedXSSInjector:
     
     def check_payload_reflection(self, response_text, payload):
         """Check if payload is reflected in response"""
-        # Check exact payload
+        
         if payload in response_text:
             return True
         
-        # Check unencoded payload
+    
         unencoded = html.unescape(payload)
         if unencoded in response_text and unencoded != payload:
             return True
         
-        # Check for partially encoded payloads
+        
         encoded_variations = [
             payload.replace("<", "&lt;").replace(">", "&gt;"),
             payload.replace("'", "&#39;").replace('"', "&quot;"),
@@ -144,17 +144,14 @@ class AdvancedXSSInjector:
         return False
     
     def assess_xss_severity(self, response_text, payload):
-        """Assess severity of XSS vulnerability"""
-        # Check if payload is unmodified (high severity)
+    
         if payload in response_text:
             return "HIGH"
         
-        # Check if payload is partially escaped (medium severity)
         escaped_payload = html.escape(payload)
         if escaped_payload in response_text:
             return "MEDIUM"
         
-        # Check if only part of payload is present (low severity)
         for part in payload.split():
             if len(part) > 5 and part in response_text:
                 return "LOW"
@@ -170,22 +167,21 @@ class AdvancedXSSInjector:
             "summary": {}
         }
         
-        # Test reflected XSS on URL parameters
         if params:
             reflected = self.test_reflected_xss(url, params)
             results["reflected_xss"].extend(reflected)
         
-        # Test stored XSS on forms
+
         for form in forms:
             for category, payloads in self.xss_payloads.items():
-                for payload in payloads[:3]:  # Test 3 payloads per category
+                for payload in payloads[:3]:  
                     stored_result = self.test_stored_xss(form, payload)
                     if stored_result["vulnerable"]:
                         stored_result["category"] = category
                         results["stored_xss"].append(stored_result)
                         break
         
-        # Generate summary
+
         results["summary"] = {
             "total_reflected": len(results["reflected_xss"]),
             "total_stored": len(results["stored_xss"]),
