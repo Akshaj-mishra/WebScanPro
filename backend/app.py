@@ -21,29 +21,33 @@ class ScanRequest(BaseModel):
 def health():
     return {"message": "FastAPI backend running"}
 
+
 @app.post("/result")
 async def get_web(request: ScanRequest):
-    
-    scanner = Scanner(request.url)
-    report_gen = ReportGenerator(request.url)
-    
 
-    scan_results = scanner.run_targeted_scan(request.url)
-    
+    try:
+        base_url = request.url.split("/vulnerabilities")[0]
 
-    if "sql_injection" in scan_results:
-        report_gen.add_sql_results(scan_results["sql_injection"])
-    if "xss" in scan_results:
-        report_gen.add_xss_results(scan_results["xss"])
-    if "idor" in scan_results:
-        report_gen.add_idor_results(scan_results["idor"])
-    
+        scanner = Scanner(base_url)
+        report_gen = ReportGenerator(request.url)
 
-    ai_summary = report_gen.generate_ai_summary()
-    
-    return {
-        "status": "Scan and AI Analysis Complete",
-        "target_url": request.url,
-        "ai_analysis": ai_summary,
-        "raw_results": scan_results
-    }
+        scan_results = scanner.run_targeted_scan(request.url)
+
+        if "sql_injection" in scan_results:
+            report_gen.add_sql_results(scan_results["sql_injection"])
+        if "xss" in scan_results:
+            report_gen.add_xss_results(scan_results["xss"])
+        if "idor" in scan_results:
+            report_gen.add_idor_results(scan_results["idor"])
+
+        ai_summary = report_gen.generate_ai_summary()
+
+        return {
+            "status": "Scan and AI Analysis Complete",
+            "target_url": request.url,
+            "ai_analysis": ai_summary,
+            "raw_results": scan_results
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
