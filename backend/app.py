@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from main.service.scanner import Scanner 
 from main.service.report_gen import ReportGenerator
+from test import crawl
 
 app = FastAPI(title="WebScanPro API")
 
@@ -24,30 +25,9 @@ def health():
 
 @app.post("/result")
 async def get_web(request: ScanRequest):
-
-    try:
+        
         base_url = request.url.split("/vulnerabilities")[0]
-
         scanner = Scanner(base_url)
-        report_gen = ReportGenerator(request.url)
-
-        scan_results = scanner.run_targeted_scan(request.url)
-
-        if "sql_injection" in scan_results:
-            report_gen.add_sql_results(scan_results["sql_injection"])
-        if "xss" in scan_results:
-            report_gen.add_xss_results(scan_results["xss"])
-        if "idor" in scan_results:
-            report_gen.add_idor_results(scan_results["idor"])
-
-        ai_summary = report_gen.generate_ai_summary()
-
-        return {
-            "status": "Scan and AI Analysis Complete",
-            "target_url": request.url,
-            "ai_analysis": ai_summary,
-            "raw_results": scan_results
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
+        scanner.run_targeted_scan(request.url)
+        test = crawl()
+        return test

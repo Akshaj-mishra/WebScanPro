@@ -1,24 +1,19 @@
-import re
-from urllib.parse import urlparse, parse_qs
-
-
 class TestRouter:
     def decide_tests(self, page):
-        
-        url = page.get("url", "")
-        forms = page.get("forms", [])
+        url = page.get("url", "").lower()
         tests = set()
-        
-        parsed = urlparse(url)
-        params = parse_qs(parsed.query)
+
        
-        if "xss" in url:
-            tests.add("xss")
-
-        if "sqli" in url or "sql" in url:
-            tests.add("sql_injection")
-
-        if "idor" in url:
+        if "vulnerabilities/bac/log_viewer.php" in url:
             tests.add("idor")
+        
+        if "vulnerabilities/authbypass" in url:
+            tests.add("auth")  
+            
+        if "vulnerabilities/sqli" in url: 
+            tests.add("sql_injection")
+            
+        if "vulnerabilities/xss_r" in url: 
+            tests.add("xss")
 
         return list(tests)

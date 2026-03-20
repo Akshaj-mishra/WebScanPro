@@ -94,46 +94,35 @@ class WebCrawler:
         return forms_found
 
 
-    def scan(self, url):
-        if url in self.visited_urls:
-            return []
-
-        if not url.startswith(self.base_url):
+    def scan(self, url, callback=None): # Added callback parameter
+        if url in self.visited_urls or not url.startswith(self.base_url):
             return []
 
         try:
             print(f"[*] Crawling: {url}")
-
             res = self.session.get(url)
             self.visited_urls.add(url)
-
             soup = BeautifulSoup(res.text, "html.parser")
-
             forms = self.get_inputs(soup, url)
 
-            page_data = {
-                "url": url,
-                "forms": forms
-            }
+            page_data = {"url": url, "forms": forms}
+            
+            # --- NEW: Trigger tests immediately if a callback is provided ---
+            if callback:
+                callback(page_data)
 
             self.target_data.append(page_data)
 
             for link in soup.find_all("a", href=True):
                 href = link.get("href")
-
-                if "logout" in href.lower():
-                    continue
-
+                if "logout" in href.lower(): continue
+                
                 full_url = urljoin(url, href)
-
                 if urlparse(full_url).netloc == urlparse(self.base_url).netloc:
                     clean_url = full_url.split("#")[0].rstrip("/")
-
-                    if clean_url not in self.visited_urls:
-                        self.scan(clean_url)
+                    self.scan(clean_url, callback=callback) # Pass callback recursively
 
             return [page_data]
-
         except Exception as e:
             print(f"[-] Error: {url} -> {e}")
             return []
