@@ -29,5 +29,5 @@ async def get_web(request: ScanRequest):
         base_url = request.url.split("/vulnerabilities")[0]
         scanner = Scanner(base_url)
         scanner.run_targeted_scan(request.url)
-        test = crawl()
-        return test
+        result = crawl()
+        return result

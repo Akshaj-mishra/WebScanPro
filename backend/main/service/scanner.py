@@ -5,27 +5,26 @@ from main.tests.xss import AdvancedXSSInjector
 from main.tests.idor import IDORTester
 from main.service.testrouter import TestRouter
 
-# Note: In the future, you can import and call functions from auth_test.py here
-# from main.tests.auth_test import check_cookie_security, test_weak_credentials
+
 
 class Scanner:
     def __init__(self, base_url):
         self.base_url = base_url.rstrip("/")
         
-        # Setup session with a common User-Agent
+        
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebScanPro/1.0"
         })
 
-        # Initialize all specialized security components
+        
         self.crawler = WebCrawler(self.base_url, session=self.session)
         self.sql_injector = SQLInjector(session=self.session)
         self.xss_injector = AdvancedXSSInjector(session=self.session)
         self.idor_tester = IDORTester(session=self.session)
         self.router = TestRouter()
         
-        # Result store for both recursive and targeted scans
+        
         self.results = {
             "sql_injection": [],
             "xss": [],
@@ -41,7 +40,7 @@ class Scanner:
         url = page.get("url")
         forms = page.get("forms", [])
         
-        # Route the URL to determine which specific security tests to fire
+        
         tests = self.router.decide_tests(page)
         
         if tests:
@@ -49,22 +48,18 @@ class Scanner:
 
         for test in tests:
             if test == "sql_injection":
-                # Execute the SQL logic specifically for this page's discovered forms
                 res = self._test_sql_logic([page])
                 self.results["sql_injection"].extend(res)
 
             elif test == "xss":
-                # Trigger Reflected and Stored XSS checks
                 res = self.xss_injector.scan_all_xss(url, forms)
                 self.results["xss"].append(res)
 
             elif test == "idor":
-                # Specifically targets paths like 'vulnerabilities/bac/log_viewer.php'
                 res = self.idor_tester.scan_for_idor(self.base_url, [page])
                 self.results["idor"].append(res)
 
             elif test == "auth":
-                # Specifically targets paths like 'vulnerabilities/authbypass'
                 auth_finding = {
                     "url": url,
                     "test_category": "Authentication & Session Security",
@@ -79,9 +74,8 @@ class Scanner:
         asynchronously as pages are found.
         """
         print(f"[*] Starting Automated Recursive Scan: {self.base_url}")
-        self.results = {"sql_injection": [], "xss": [], "idor": [], "auth": []} # Reset State
+        self.results = {"sql_injection": [], "xss": [], "idor": [], "auth": []}
         
-        # Pass the callback to the crawler's scan method
         self.crawler.scan(self.base_url, callback=self._on_page_discovered)
         
         return self.results
@@ -91,9 +85,8 @@ class Scanner:
         API mode: Scans only the specific URL provided (used by app.py).
         """
         print(f"[*] Starting Targeted Scan: {target_url}")
-        self.results = {"sql_injection": [], "xss": [], "idor": [], "auth": []} # Reset State
+        self.results = {"sql_injection": [], "xss": [], "idor": [], "auth": []} 
         
-        # Pull data for just this page
         page_data_list = self.crawler.scan(target_url)
         
         if page_data_list:
@@ -125,11 +118,11 @@ class Scanner:
         return findings
 
 if __name__ == "__main__":
-    # Local Testing Block
+    
     TARGET_BASE = "http://localhost/DVWA"
     scanner = Scanner(TARGET_BASE)
     
-    # Execute full automation
+
     report_data = scanner.run_full_recursive_scan()
     
     print("\n" + "="*40)

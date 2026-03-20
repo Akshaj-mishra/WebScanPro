@@ -94,7 +94,7 @@ class WebCrawler:
         return forms_found
 
 
-    def scan(self, url, callback=None): # Added callback parameter
+    def scan(self, url, callback=None): 
         if url in self.visited_urls or not url.startswith(self.base_url):
             return []
 
@@ -107,7 +107,7 @@ class WebCrawler:
 
             page_data = {"url": url, "forms": forms}
             
-            # --- NEW: Trigger tests immediately if a callback is provided ---
+           
             if callback:
                 callback(page_data)
 
@@ -120,7 +120,7 @@ class WebCrawler:
                 full_url = urljoin(url, href)
                 if urlparse(full_url).netloc == urlparse(self.base_url).netloc:
                     clean_url = full_url.split("#")[0].rstrip("/")
-                    self.scan(clean_url, callback=callback) # Pass callback recursively
+                    self.scan(clean_url, callback=callback) 
 
             return [page_data]
         except Exception as e:
